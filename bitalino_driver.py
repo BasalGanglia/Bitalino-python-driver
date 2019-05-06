@@ -20,7 +20,7 @@ import numpy as np
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from struct import *
-from my_utils import logWriter
+from util.log_writer import log_writer
 
 class Bitalino_driver:
   
@@ -37,7 +37,7 @@ class Bitalino_driver:
   def main(self):   
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--sampling_rate", help = "Sampling rate used for recording data,", type = int, default = 10)
+    parser.add_argument("--sampling_rate", help = "Sampling rate used for recording data", type = int, default = 10)
     parser.add_argument("--offline", help="run in offline mode", action="store_true")
     parser.add_argument("--logging", help="Log the data", action="store_true", default="True")  
     parser.add_argument("--osc_path", help="the osc path prefix", default="Bitalino")
@@ -47,16 +47,17 @@ class Bitalino_driver:
     parser.add_argument("--mac_address", default = "20:16:12:22:45:56")
     parser.add_argument("--battery_threshold", default = 30)
     parser.add_argument("--analog_channels", default = "0,1,2,3,4,5")
+    parser.add_argument("--batch_size", help = "number of samples read in batch", type = int, default = 10)
   
   
     args = parser.parse_args()
 
-    the_logger = logWriter()
+    the_logger = log_writer(True)
     the_logger.log_msg("Starting up.")
     
     # Testing the csv logger:
-    the_logger.log_data([1, 3, 4, 5, 6])
-    return
+   # the_logger.log_data([1, 3, 4, 5, 6])
+   # return
     
 # The channel list parsing is bit of a hack.. I'm sure there is some more pythonesque way of doing this
     anal_channels = args.analog_channels.split(',')
@@ -68,16 +69,18 @@ class Bitalino_driver:
     # small samping rate for testing..
     analogChannels= args.analog_channels
     samplingRate = args.sampling_rate
+    print("sampling rate is ", samplingRate )
+    print("with type", type(samplingRate))
     
-    nSamples = 10
-    digitalOutput = [1,1]
+    nSamples = 12
+  #  digitalOutput = [1,1]
     
     # Connect to BITalino
     device = BITalino(args.mac_address)
     
     # Set battery threshold
     batty = device.battery(args.battery_threshold)
-    the_logger.log_msg("Starting recording. Device Battery at : " + str(batty))
+ #   the_logger.log_msg("Starting recording. Device Battery at : " + str(batty))
    
 
     
@@ -109,7 +112,20 @@ class Bitalino_driver:
     
       print("Data shape {0}, and first row{1}".format(rec_data.shape, rec_data[0]))
       print("full data is {0}".format(rec_data))
+      current_time = datetime.datetime.now().timestamp()
+      print("current_time is now: ", current_time)
+      #  We have to generate time stamps for each of the samples we record in a batch.
+      for count, sample in enumerate(rec_data):
+        # add 1 / divided by sampling rate
+   #     print("current time before conversion ", current_time)
+      
+        print("current_time before printing to sample: ", current_time)
+        sample = np.insert(sample, 0, current_time)
+#        print("the sample is ", str(sample) )      
+        the_logger.log_data(sample)
+        current_time += (1.0 / samplingRate)
       # print("and the mean for EDA (A1) is {0}".format(np.mean(rec_data[:][5])))
+      print("current time after loop ", current_time)	
       print("means for the batch{0}".format(np.mean(rec_data, axis= 0)))
       print("the interrupter is {0}".format(self.interrupter))
      
