@@ -43,7 +43,7 @@ class Bitalino_driver:
     parser.add_argument("--osc_path", help="the osc path prefix", default="Bitalino")
     parser.add_argument("--dest_ip",
                           help="IP address of the destination", default="127.0.0.1")
-    parser.add_argument("--dest_port", help="the port", type=int, default=9999)
+    parser.add_argument("--dest_port", help="the port", type=int, default=8000)
     parser.add_argument("--mac_address", default = "20:16:12:22:45:56")
     parser.add_argument("--battery_threshold", default = 30)
     parser.add_argument("--analog_channels", default = "0,1,2,3,4,5")
@@ -63,33 +63,24 @@ class Bitalino_driver:
     anal_channels = args.analog_channels.split(',')
     channels = list(map(int, anal_channels))
   
-    acqChannels = [0, 1, 2, 3, 4, 5]
+   # acqChannels = [0, 1, 2, 3, 4, 5]
     #samplingRate = 1000
     
     # small samping rate for testing..
     analogChannels= args.analog_channels
     samplingRate = args.sampling_rate
-    print("sampling rate is ", samplingRate )
-    print("with type", type(samplingRate))
-    
-    nSamples = 12
-  #  digitalOutput = [1,1]
+    nSamples = args.batch_size
     
     # Connect to BITalino
     device = BITalino(args.mac_address)
     
     # Set battery threshold
     batty = device.battery(args.battery_threshold)
- #   the_logger.log_msg("Starting recording. Device Battery at : " + str(batty))
-   
-
-    
-    # interrupter = False
   
   # If we are not in offline mode we start streaming to given UDP port.
   # He we just create a UDPClient for that.
     if not args.offline:
-      client1 = udp_client.SimpleUDPClient(args.dest_ip, args.dest_port)  
+      client = udp_client.SimpleUDPClient(args.dest_ip, args.dest_port)  
   
   # Add stuff like which channels to record here!!
     running_time = 10
@@ -110,25 +101,35 @@ class Bitalino_driver:
       # Start Acquisition
       rec_data = device.read(nSamples)  
     
-      print("Data shape {0}, and first row{1}".format(rec_data.shape, rec_data[0]))
+#      print("Data shape {0}, and first row{1}".format(rec_data.shape, rec_data[0]))
       print("full data is {0}".format(rec_data))
       current_time = datetime.datetime.now().timestamp()
-      print("current_time is now: ", current_time)
+ #     print("current_time is now: ", current_time)
       #  We have to generate time stamps for each of the samples we record in a batch.
-      for count, sample in enumerate(rec_data):
-        # add 1 / divided by sampling rate
-   #     print("current time before conversion ", current_time)
-      
-        print("current_time before printing to sample: ", current_time)
+      for sample in rec_data:
+#        print("current_time before printing to sample: ", current_time)
+        # Delete digital channels (that contains just zeroes but that cannot be ignored)
+        # maybe this delete/insert thing is inefficient, but hopefully not inefficient enough
+        # to cause issues...
+        sample = np.delete(sample, [0, 1, 2, 3, 4])
         sample = np.insert(sample, 0, current_time)
-#        print("the sample is ", str(sample) )      
         the_logger.log_data(sample)
         current_time += (1.0 / samplingRate)
+        print("storing sample: ", sample)
       # print("and the mean for EDA (A1) is {0}".format(np.mean(rec_data[:][5])))
-      print("current time after loop ", current_time)	
-      print("means for the batch{0}".format(np.mean(rec_data, axis= 0)))
-      print("the interrupter is {0}".format(self.interrupter))
-     
+
+  #    print("current time after loop ", current_time)
+  
+  #  Following code just for State of Darkness!! Does not generalize and will break if EDA is
+  #  recorded from somewhere other than first channel.
+      EDA_data = np.mean(rec_data, axis= 0)[5]
+      osc_address = args.osc_path + "/EDA"
+      msg = osc_message_builder.OscMessageBuilder(address = osc_address)     
+      msg.add_arg(EDA_data)
+      msg = msg.build()
+      if not args.offline:
+        client.send(msg)
+
     # Stop acquisition
     device.stop()
     
