@@ -39,7 +39,9 @@ class Bitalino_driver:
     
     parser.add_argument("--sampling_rate", help = "Sampling rate used for recording data", type = int, default = 10)
     parser.add_argument("--offline", help="run in offline mode", action="store_true")
-    parser.add_argument("--logging", help="Log the data", action="store_true", default="True")  
+    parser.add_argument("--logging", dest = "logging", help="Log the data", action="store_true",default=True)
+    parser.add_argument("--no-logging", dest = 'logging', help="Log the data", action="store_false")
+  
     parser.add_argument("--osc_path", help="the osc path prefix", default="Bitalino")
     parser.add_argument("--dest_ip",
                           help="IP address of the destination", default="127.0.0.1")
@@ -51,8 +53,9 @@ class Bitalino_driver:
   
   
     args = parser.parse_args()
-
-    the_logger = log_writer(True)
+    
+    print("the logging argument is ", args.logging)
+    the_logger = log_writer(args.logging)
     the_logger.log_msg("Starting up.")
     
     # Testing the csv logger:
