@@ -2,7 +2,7 @@
 """
 Commandline python tool for forwarding Bitalino data over network.
 
-@author: Ilkka
+@author: Ilkka Kosunen (ilkka.kosunen@gmail.com)
 """
 
 import argparse
@@ -25,6 +25,10 @@ from util.log_writer import log_writer
 class Bitalino_driver:
   
   def __init__(self):
+    
+    #  The following code allows interruption of recording by using
+    #  the normal CTRL+C interrupt
+  
     self.interrupter = False
     def signal_handler(signal, frame):
       print( "caught a signal")
@@ -40,7 +44,7 @@ class Bitalino_driver:
     parser.add_argument("--sampling_rate", help = "Sampling rate used for recording data", type = int, default = 10)
     parser.add_argument("--offline", help="run in offline mode", action="store_true")
     parser.add_argument("--logging", dest = "logging", help="Log the data", action="store_true",default=True)
-    parser.add_argument("--no-logging", dest = 'logging', help="Log the data", action="store_false")
+    parser.add_argument("--no_logging", dest = 'logging', help="Log the data", action="store_false")
   
     parser.add_argument("--osc_path", help="the osc path prefix", default="Bitalino")
     parser.add_argument("--dest_ip",
@@ -58,17 +62,10 @@ class Bitalino_driver:
     the_logger = log_writer(args.logging)
     the_logger.log_msg("Starting up.")
     
-    # Testing the csv logger:
-   # the_logger.log_data([1, 3, 4, 5, 6])
-   # return
-    
 # The channel list parsing is bit of a hack.. I'm sure there is some more pythonesque way of doing this
     anal_channels = args.analog_channels.split(',')
     channels = list(map(int, anal_channels))
   
-   # acqChannels = [0, 1, 2, 3, 4, 5]
-    #samplingRate = 1000
-    
     # small samping rate for testing..
     analogChannels= args.analog_channels
     samplingRate = args.sampling_rate
@@ -84,33 +81,18 @@ class Bitalino_driver:
   # He we just create a UDPClient for that.
     if not args.offline:
       client = udp_client.SimpleUDPClient(args.dest_ip, args.dest_port)  
-  
-  # Add stuff like which channels to record here!!
-    running_time = 10
-    
-    # Read BITalino version
-    print(device.version())
     
     # Start recording
     
-    print("The channels we are recording: {0} ".format(channels))
     device.start(samplingRate, channels)
-  #  device.start(samplingRate, acqChannels)
-    # Turn BITalino led on
-    # device.trigger(digitalOutput) 
    
     while self.interrupter == False:  
   
       # Start Acquisition
       rec_data = device.read(nSamples)  
     
-#      print("Data shape {0}, and first row{1}".format(rec_data.shape, rec_data[0]))
-      print("full data is {0}".format(rec_data))
       current_time = datetime.datetime.now().timestamp()
- #     print("current_time is now: ", current_time)
-      #  We have to generate time stamps for each of the samples we record in a batch.
       for sample in rec_data:
-#        print("current_time before printing to sample: ", current_time)
         # Delete digital channels (that contains just zeroes but that cannot be ignored)
         # maybe this delete/insert thing is inefficient, but hopefully not inefficient enough
         # to cause issues...
@@ -118,10 +100,6 @@ class Bitalino_driver:
         sample = np.insert(sample, 0, current_time)
         the_logger.log_data(sample)
         current_time += (1.0 / samplingRate)
-        print("storing sample: ", sample)
-      # print("and the mean for EDA (A1) is {0}".format(np.mean(rec_data[:][5])))
-
-  #    print("current time after loop ", current_time)
   
   #  Following code just for State of Darkness!! Does not generalize and will break if EDA is
   #  recorded from somewhere other than first channel.
@@ -142,7 +120,5 @@ class Bitalino_driver:
     return
 
 if __name__ == "__main__":
-  # # Attempt to ctrl-c work in windows.. not very succesful.
   driver = Bitalino_driver()
-  
   driver.main()

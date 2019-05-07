@@ -8,14 +8,10 @@ class log_writer:
 
         #  if logging is set to false we do not log
         self.logging = logging
-        print("self logging is", self.logging)
-        print("type of self.logging is ", str(type(self.logging)))
         if not self.logging:
-            print("we are not logging, thus we return!")
             return
             
-        print("we dont give a fuck about no arguments.!")
-# Check if there is directory for log files, if not, create it.        
+        # Check if there is directory for log files, if not, create it.        
         if not os.path.isdir("logs"):
             os.mkdir("logs")
         
