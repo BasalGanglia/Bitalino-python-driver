@@ -58,7 +58,6 @@ class Bitalino_driver:
   
     args = parser.parse_args()
     
-    print("the logging argument is ", args.logging)
     the_logger = log_writer(args.logging)
     the_logger.log_msg("Starting up.")
     
