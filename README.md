@@ -10,3 +10,10 @@ By default (if you do not specify --no_logging) it will create "logs" directory,
 One file, with extension .logs that contains errors etc. as well as a datafile in .csv format that logs the recorded the
 data with timestamps.
 
+# installation
+
+You need some packages, mainly python-osc which you should be able to get with
+
+```console
+pip install python-osc
+```
