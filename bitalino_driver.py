@@ -54,7 +54,7 @@ class Bitalino_driver:
     parser.add_argument("--battery_threshold", default = 30)
     parser.add_argument("--analog_channels", default = "0,1,2,3,4,5")
     parser.add_argument("--batch_size", help = "number of samples read in batch", type = int, default = 10)
-  
+    parser.add_argument("--EDA_channel", help = "the analog channel inded of EXA", type = int, default = 3)
   
     args = parser.parse_args()
     
@@ -102,7 +102,8 @@ class Bitalino_driver:
   
   #  Following code just for State of Darkness!! Does not generalize and will break if EDA is
   #  recorded from somewhere other than first channel.
-      EDA_data = np.mean(rec_data, axis= 0)[5]
+      EDA_data = np.mean(rec_data, axis= 0)[(4 + args.EDA_channel)]
+      print("the EDA_data is:  ", EDA_data)
       osc_address = args.osc_path + "/EDA"
       msg = osc_message_builder.OscMessageBuilder(address = osc_address)     
       msg.add_arg(EDA_data)
