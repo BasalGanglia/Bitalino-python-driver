@@ -1,3 +1,5 @@
+VENV/
+.vscode/
 *.wpu
 *.wpr
 *.csv
