@@ -21,11 +21,11 @@ from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from struct import *
 from util.log_writer import log_writer
+import csv
 
 
 class Bitalino_driver:
     def __init__(self):
-
         #  The following code allows interruption of recording by using
         #  the normal CTRL+C interrupt
 
@@ -87,6 +87,9 @@ class Bitalino_driver:
             type=int,
             default=1,
         )
+        parser.add_argument(
+            "--playback_file", help="the osc path prefix", default="/Bitalino"
+        )
 
         args = parser.parse_args()
 
@@ -101,6 +104,26 @@ class Bitalino_driver:
         analogChannels = args.analog_channels
         samplingRate = args.sampling_rate
         nSamples = args.batch_size
+
+        ## playck simulator hack. If there was time this would need be refactors
+
+        if True:
+            samplingRate = 1000
+            countti = 0
+            with open("playback_data.csv") as csvfile:
+                reader = csv.reader(csvfile, delimiter=",")
+                header = next(reader)
+                
+                for row in reader:
+                    ppg_sample = row[3]
+                    message = ','.join(row).encode('utf-8')
+                    print(f"the message is {message}")
+                    # the_logger.log_data(row)
+                    time.sleep(1.0 / samplingRate)
+                    countti = countti + 1
+
+                    if countti > 200:
+                        return
 
         # Connect to BITalino
         device = BITalino(args.mac_address)
@@ -118,7 +141,6 @@ class Bitalino_driver:
         device.start(samplingRate, channels)
 
         while self.interrupter == False:
-
             # Start Acquisition
             rec_data = device.read(nSamples)
             print(f"raw data {rec_data}")
