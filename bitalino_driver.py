@@ -46,7 +46,7 @@ class Bitalino_driver:
             "--sampling_rate",
             help="Sampling rate used for recording data",
             type=int,
-            default=10,
+            default=100,
         )
         parser.add_argument(
             "--offline", help="run in offline mode", action="store_true"
@@ -73,10 +73,19 @@ class Bitalino_driver:
         parser.add_argument("--battery_threshold", default=30)
         parser.add_argument("--analog_channels", default="0,1,2,3,4,5")
         parser.add_argument(
-            "--batch_size", help="number of samples read in batch", type=int, default=10
+            "--batch_size",
+            help="number of samples read in batch",
+            type=int,
+            default=10,
         )
         parser.add_argument(
-            "--EDA_channel", help="the analog channel inded of EXA", type=int, default=1
+            "--EDA_channel", help="the analog channel inded of EDA", type=int, default=3
+        )
+        parser.add_argument(
+            "--RESP_channel",
+            help="the analog channel inded of RESP",
+            type=int,
+            default=1,
         )
 
         args = parser.parse_args()
@@ -112,7 +121,7 @@ class Bitalino_driver:
 
             # Start Acquisition
             rec_data = device.read(nSamples)
-
+            print(f"raw data {rec_data}")
             current_time = datetime.datetime.now().timestamp()
             for sample in rec_data:
                 # Delete digital channels (that contains just zeroes but that cannot be ignored)
@@ -125,8 +134,11 @@ class Bitalino_driver:
 
             #  Following code just for State of Darkness!! Does not generalize and will break if EDA is
             #  recorded from somewhere other than first channel.
+
             EDA_data = np.mean(rec_data, axis=0)[(4 + args.EDA_channel)]
+            RESP_data = np.mean(rec_data, axis=0)[(4 + args.RESP_channel)]
             print("the EDA_data is:  ", EDA_data)
+            print("the RESP_data is: ", RESP_data)
             osc_address = args.osc_path + "/EDA"
             msg = osc_message_builder.OscMessageBuilder(address=osc_address)
             msg.add_arg(EDA_data)

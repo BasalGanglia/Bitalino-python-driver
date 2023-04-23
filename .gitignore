@@ -6,3 +6,6 @@ VENV/
 *.log
 *.pyc
 __pycache__
+*.txt
+*.h5
+*.edf
