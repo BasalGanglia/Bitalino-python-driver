@@ -25,7 +25,7 @@ import csv
 import time
 import pandas as pd
 
-from util.signal_processors import process_EDA, process_PPG
+from util.signal_processors import EDAProcessor
 from util.data_utils import load_playback_data
 
 
@@ -55,6 +55,9 @@ class Bitalino_driver:
         )
         parser.add_argument(
             "--offline", help="run in offline mode", action="store_true"
+        )
+        parser.add_argument(
+            "--playback", help="run in playback mode", action="store_true", default=True
         )
 
         parser.add_argument(
@@ -93,9 +96,6 @@ class Bitalino_driver:
             type=int,
             default=1,
         )
-        parser.add_argument(
-            "--playback_file", help="the osc path prefix", default="/Bitalino"
-        )
 
         args = parser.parse_args()
 
@@ -112,40 +112,25 @@ class Bitalino_driver:
         nSamples = args.batch_size
 
         ## playck simulator hack. If there was time this would need be refactors
-
-        if True:
+        EProcessor = EDAProcessor()
+        if args.playback:
             samplingRate = 1000
             stepSize = 100
-            countti = 0
             (dat, sig) = load_playback_data()
+            data_length = len(dat)
+            data_length = 2000
             for i in range(0, len(dat), stepSize):
-                eddy = process_EDA(dat[i : i + stepSize, sig.get_loc("EDA")])
+                EDA_data = EProcessor.process(dat[i : i + stepSize, sig.get_loc("EDA")])
+                time.sleep(stepSize / samplingRate)
                 print(f"eddy is now {eddy} with i being {i}")
+                # osc_address = args.osc_path + "/EDA"
+                # msg = osc_message_builder.OscMessageBuilder(address=osc_address)
+                # msg.add_arg(EDA_data)
+                # msg = msg.build()
+                # if not args.offline:
+                #     client.send(msg)
 
             return
-            # df = pd.read_csv("playback_data.dat")
-            # for i, row in df.iterrows():
-            #     if (i % 100) == 0:
-            #         print(f"processing row {row}")
-            #         print(f"timenow: {datetime.datetime.fromtimestamp(time.time())}")
-            #     time.sleep(1.0 / samplingRate)
-            #     if i > 2000:
-            #         break
-
-            # with open("playback_data.csv") as csvfile:
-            #     reader = csv.reader(csvfile, delimiter=",")
-            #     header = next(reader)
-
-            #     for row in reader:
-            #         ppg_sample = row[3]
-            #         message = ','.join(row).encode('utf-8')
-            #         print(f"the message is {message}")
-            #         # the_logger.log_data(row)
-            #         time.sleep(1.0 / samplingRate)
-            #         countti = countti + 1
-
-            #         if countti > 200:
-            #             return
 
         # Connect to BITalino
         device = BITalino(args.mac_address)
