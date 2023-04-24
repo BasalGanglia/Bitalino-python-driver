@@ -22,6 +22,11 @@ from pythonosc import udp_client
 from struct import *
 from util.log_writer import log_writer
 import csv
+import time
+import pandas as pd
+
+from util.signal_processors import process_EDA, process_PPG
+from util.data_utils import load_playback_data
 
 
 class Bitalino_driver:
@@ -51,6 +56,7 @@ class Bitalino_driver:
         parser.add_argument(
             "--offline", help="run in offline mode", action="store_true"
         )
+
         parser.add_argument(
             "--logging",
             dest="logging",
@@ -109,21 +115,37 @@ class Bitalino_driver:
 
         if True:
             samplingRate = 1000
+            stepSize = 100
             countti = 0
-            with open("playback_data.csv") as csvfile:
-                reader = csv.reader(csvfile, delimiter=",")
-                header = next(reader)
-                
-                for row in reader:
-                    ppg_sample = row[3]
-                    message = ','.join(row).encode('utf-8')
-                    print(f"the message is {message}")
-                    # the_logger.log_data(row)
-                    time.sleep(1.0 / samplingRate)
-                    countti = countti + 1
+            (dat, sig) = load_playback_data()
+            for i in range(0, len(dat), stepSize):
+                eddy = process_EDA(dat[i : i + stepSize, sig.get_loc("EDA")])
+                print(f"eddy is now {eddy} with i being {i}")
 
-                    if countti > 200:
-                        return
+            return
+            # df = pd.read_csv("playback_data.dat")
+            # for i, row in df.iterrows():
+            #     if (i % 100) == 0:
+            #         print(f"processing row {row}")
+            #         print(f"timenow: {datetime.datetime.fromtimestamp(time.time())}")
+            #     time.sleep(1.0 / samplingRate)
+            #     if i > 2000:
+            #         break
+
+            # with open("playback_data.csv") as csvfile:
+            #     reader = csv.reader(csvfile, delimiter=",")
+            #     header = next(reader)
+
+            #     for row in reader:
+            #         ppg_sample = row[3]
+            #         message = ','.join(row).encode('utf-8')
+            #         print(f"the message is {message}")
+            #         # the_logger.log_data(row)
+            #         time.sleep(1.0 / samplingRate)
+            #         countti = countti + 1
+
+            #         if countti > 200:
+            #             return
 
         # Connect to BITalino
         device = BITalino(args.mac_address)
