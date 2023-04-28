@@ -118,17 +118,40 @@ class Bitalino_driver:
             stepSize = 100
             (dat, sig) = load_playback_data()
             data_length = len(dat)
-            data_length = 2000
-            for i in range(0, len(dat), stepSize):
+            # data_length = 2000  # This just for quick debugging..
+            for i in range(0, data_length, stepSize):
                 EDA_data = EProcessor.process(dat[i : i + stepSize, sig.get_loc("EDA")])
+                PPG_data = EProcessor.process(dat[i : i + stepSize, sig.get_loc("PPG")])
+                Resp_data = EProcessor.process(
+                    dat[i : i + stepSize, sig.get_loc("Resp")]
+                )
+
                 time.sleep(stepSize / samplingRate)
-                print(f"eddy is now {eddy} with i being {i}")
-                # osc_address = args.osc_path + "/EDA"
-                # msg = osc_message_builder.OscMessageBuilder(address=osc_address)
-                # msg.add_arg(EDA_data)
-                # msg = msg.build()
-                # if not args.offline:
-                #     client.send(msg)
+
+                # skip the beginning calib
+                if EDA_data == 0:
+                    continue
+                ## Quick and dirty, would need refactoring and cleaning
+                osc_address = args.osc_path + "/EDA"
+                msg = osc_message_builder.OscMessageBuilder(address=osc_address)
+                msg.add_arg(EDA_data)
+                msg = msg.build()
+                if not args.offline:
+                    client.send(msg)
+
+                osc_address = args.osc_path + "/PPG"
+                msg = osc_message_builder.OscMessageBuilder(address=osc_address)
+                msg.add_arg(PPG_data)
+                msg = msg.build()
+                if not args.offline:
+                    client.send(msg)
+
+                osc_address = args.osc_path + "/Resp"
+                msg = osc_message_builder.OscMessageBuilder(address=osc_address)
+                msg.add_arg(Resp_data)
+                msg = msg.build()
+                if not args.offline:
+                    client.send(msg)
 
             return
 

@@ -10,6 +10,9 @@ class BaseProcessor:
         self.b_length = 1000
         self.base_buffer = []
         self.calibration_phase = True
+        self.online_calibration = True
+        self.online_window = 1000
+        self.range_scaler = 3
 
 
 class EDAProcessor(BaseProcessor):
@@ -17,6 +20,17 @@ class EDAProcessor(BaseProcessor):
         super().__init__()
 
     def process(self, data):
+        if self.online_calibration:
+            self.base_buffer.append(data)
+            self.b_counter += len(data)
+            if self.b_counter < self.online_window:
+                return 0
+            b_mean = np.mean(self.base_buffer[-1000:])
+            b_range = np.max(self.base_buffer[-1000:]) - np.min(
+                self.base_buffer[-1000:]
+            )
+
+            return (np.mean(data) - b_mean) / b_range
         if self.calibration_phase:
             if self.b_counter < self.b_length:
                 self.base_buffer.append(data)
@@ -35,6 +49,17 @@ class PPGProcessor(BaseProcessor):
         super().__init__()
 
     def process(self, data):
+        if self.online_calibration:
+            self.base_buffer.append(data)
+            self.b_counter += len(data)
+            if self.b_counter < self.online_window:
+                return 0
+            b_mean = np.mean(self.base_buffer[-1000:])
+            b_range = np.max(self.base_buffer[-1000:]) - np.min(
+                self.base_buffer[-1000:]
+            )
+
+            return (np.mean(data) - b_mean) / b_range
         if self.calibration_phase:
             if self.b_counter < self.b_length:
                 self.base_buffer.append(data)
@@ -53,6 +78,17 @@ class RespProcessor(BaseProcessor):
         super().__init__()
 
     def process(self, data):
+        if self.online_calibration:
+            self.base_buffer.append(data)
+            self.b_counter += len(data)
+            if self.b_counter < self.online_window:
+                return 0
+            b_mean = np.mean(self.base_buffer[-1000:])
+            b_range = np.max(self.base_buffer[-1000:]) - np.min(
+                self.base_buffer[-1000:]
+            )
+
+            return (np.mean(data) - b_mean) / b_range
         if self.calibration_phase:
             if self.b_counter < self.b_length:
                 self.base_buffer.append(data)
